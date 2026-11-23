@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nursing Informatics AI & Knowledge Hub | المساعد الذكي لمعلوماتية التمريض</title>
+    <!-- FontAwesome & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js for Visual Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-notes-medical"></i>
+                </div>
+                <div class="brand-info">
+                    <h2>NurseInfo AI</h2>
+                    <span>Nursing Informatics Hub</span>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <button class="nav-item active" data-tab="chat">
+                    <i class="fa-solid fa-comments"></i>
+                    <span data-i18n="chatNav">المحادثة السريرية (Chat)</span>
+                </button>
+                <button class="nav-item" data-tab="dataset">
+                    <i class="fa-solid fa-database"></i>
+                    <span>قاعدة بيانات المرجع (Reference Dataset)</span>
+                </button>
+                <button class="nav-item" data-tab="researcher">
+                    <i class="fa-solid fa-brain"></i>
+                    <span>ذاكرة الباحث وأفكاره (Researcher Memory)</span>
+                </button>
+                <button class="nav-item" data-tab="library">
+                    <i class="fa-solid fa-book-medical"></i>
+                    <span data-i18n="libraryNav">مكتبة وتحليل الكتب (Books)</span>
+                </button>
+                <button class="nav-item" data-tab="notes">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                    <span data-i18n="notesNav">الملاحظات والدراسة (Notes)</span>
+                </button>
+                <button class="nav-item" data-tab="analytics">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span data-i18n="analyticsNav">الأسئلة المتكررة والإحصائيات</span>
+                </button>
+            </nav>
+
+            <!-- Mode & API Settings in Sidebar -->
+            <div class="sidebar-settings">
+                <div class="settings-title">
+                    <i class="fa-solid fa-sliders"></i> <span data-i18n="aiSettings">إعدادات الذكاء الاصطناعي</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="ai-lang-select"><i class="fa-solid fa-globe"></i> <span data-i18n="langLabel">لغة الإجابة المفضلة:</span></label>
+                    <select id="ai-lang-select" class="form-control">
+                        <option value="auto">تلقائي (حسب لغة السؤال) / Auto</option>
+                        <option value="ar">العربية دائمًا (Arabic)</option>
+                        <option value="en">English Always (الإنجليزية)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="ai-mode-select" data-i18n="engineType">نوع المحرك (Engine):</label>
+                    <select id="ai-mode-select" class="form-control">
+                        <option value="auto">تلقائي (Built-in + Gemini)</option>
+                        <option value="local">محرك محلي مستقل (Standalone)</option>
+                        <option value="gemini">Google Gemini API (سحابي)</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="gemini-key-group">
+                    <label for="gemini-api-key">Gemini API Key (اختياري):</label>
+                    <input type="password" id="gemini-api-key" class="form-control" placeholder="أدخل مفتاح Gemini..." />
+                    <small class="hint">يتم حفظ المفتاح محلياً في متصفحك فقط</small>
+                </div>
+
+                <div class="quick-status">
+                    <div class="status-indicator online"></div>
+                    <span id="active-engine-label">المحرك جاهز</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Top Bar -->
+            <header class="topbar">
+                <div class="topbar-title">
+                    <h1 id="tab-title">المحادثة الذكية التمريضية</h1>
+                    <p id="tab-subtitle">مساعد سريري وأكاديمي لتحليل وفهم مفاهيم معلوماتية التمريض ومراجعها</p>
+                </div>
+                <div class="header-badges">
+                    <button id="toggle-ui-lang-btn" class="badge-pill btn-lang-toggle" style="cursor: pointer; border: 1px solid var(--border-color);">
+                        <i class="fa-solid fa-language"></i> <span id="ui-lang-btn-text">English UI</span>
+                    </button>
+                    <div class="badge-pill">
+                        <i class="fa-solid fa-book"></i> <span id="stat-books-count">0</span> <span data-i18n="booksIndexed">كتب مفهرسة</span>
+                    </div>
+                    <div class="badge-pill">
+                        <i class="fa-solid fa-question-circle"></i> <span id="stat-queries-count">0</span> <span data-i18n="queriesLogged">استفسار مسجل</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- TAB 1: CHAT INTERFACE -->
+            <section id="tab-chat" class="tab-pane active">
+                <div class="chat-container">
+                    <div class="chat-header-bar">
+                        <div class="reference-selector">
+                            <label><i class="fa-solid fa-filter"></i> مصدر الإجابة / المرجع:</label>
+                            <select id="chat-book-selector" class="form-control-sm">
+                                <option value="">كل الكتب والمراجع المخزنة (شامل)</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <span id="researcher-tone-badge" class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 11px;">
+                                <i class="fa-solid fa-brain"></i> نمط الحوار: تحليلي أكاديمي
+                            </span>
+                            <button id="clear-chat-btn" class="btn-secondary-sm" title="مسح المحادثة الحالية">
+                                <i class="fa-solid fa-trash-can"></i> محادثة جديدة
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Messages Stream -->
+                    <div class="chat-messages" id="chat-messages-box">
+                        <!-- Welcome message -->
+                        <div class="chat-msg bot">
+                            <div class="msg-avatar"><i class="fa-solid fa-user-nurse"></i></div>
+                            <div class="msg-content">
+                                <div class="msg-author">المساعد الذكي لمعلوماتية التمريض (NurseInfo AI)</div>
+                                <div class="msg-body">
+                                    أهلاً بك! أنا مساعدك التفاعلي المتخصص في <strong>معلوماتية التمريض (Nursing Informatics)</strong>.
+                                    <br>يمكنك:
+                                    <ul>
+                                        <li>سؤالي حول مفاهيم مثل: <em>DIKW Pyramid, NANDA/NIC/NOC, CDSS, EHR, NMDS, HIPAA</em>.</li>
+                                        <li>رفع كتبك ومراجعك من تبويب <strong>"مكتبة وتحليل الكتب"</strong> لتحليلها فورياً والبحث داخلها.</li>
+                                        <li>متابعة الأسئلة الأكثر تكراراً واستخراج الملاحظات السريرية التلقائية.</li>
+                                    </ul>
+                                    <em>ما هو الموضوع أو السؤال الذي تود مناقشته اليوم؟</em>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Suggested Prompts / Chips -->
+                    <div class="suggested-chips">
+                        <span>أسئلة سريعة:</span>
+                        <button class="chip" data-prompt="What is the DIKW hierarchy in Nursing Informatics?">ما هو هرم DIKW في التمريض؟</button>
+                        <button class="chip" data-prompt="Explain the difference between NANDA, NIC, and NOC">الفرق بين NANDA و NIC و NOC</button>
+                        <button class="chip" data-prompt="How does CDSS reduce medication errors and what is alert fatigue?">نظم دعم القرار الطبي و Alert Fatigue</button>
+                        <button class="chip" data-prompt="ما هي عناصر Nursing Minimum Data Set (NMDS)؟">عناصر الـ NMDS التمريضية</button>
+                    </div>
+
+                    <!-- Chat Input Bar -->
+                    <div class="chat-input-wrapper">
+                        <form id="chat-form" class="chat-input-form">
+                            <textarea id="chat-input" placeholder="اكتب سؤالك أو استفسارك التمريضي هنا (عربي أو إنجليزي)..." rows="1"></textarea>
+                            <button type="submit" id="chat-send-btn" class="btn-primary">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB DATASET: REFERENCE KNOWLEDGE BASE -->
+            <section id="tab-dataset" class="tab-pane">
+                <div class="library-container">
+                    <div class="card" style="border-right: 5px solid var(--secondary);">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-database"></i> قاعدة بيانات المرجع القياسي (Nursing Informatics Benchmark Dataset)</h3>
+                            <p>مجموعة بيانات معيارية موثقة ومعتمدة دولياً (ANA / IMIA / HIMSS / ISO) تخدم كمرجع أساسي ومصدر إثبات موحد يستند إليه الذكاء الاصطناعي في إجاباته السريرية ومقارناته.</p>
+                        </div>
+                        <div class="notes-toolbar" style="margin-top: 14px; padding: 12px 16px;">
+                            <div class="search-box">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="dataset-search-input" placeholder="بحث في مفاهيم ومعايير الـ Dataset..." class="form-control">
+                            </div>
+                            <div class="category-filters" id="dataset-domain-filters">
+                                <button class="filter-btn active" data-domain="">كل المجالات</button>
+                                <button class="filter-btn" data-domain="Core Concepts">المفاهيم الأساسية</button>
+                                <button class="filter-btn" data-domain="Terminologies">المصطلحات (Terminologies)</button>
+                                <button class="filter-btn" data-domain="Clinical Decision Support">دعم القرار (CDSS)</button>
+                                <button class="filter-btn" data-domain="EHR & Systems">السجلات والأنظمة</button>
+                                <button class="filter-btn" data-domain="Ethics & HIPAA">الأخلاقيات والخصوصية</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="books-section">
+                        <div class="section-header">
+                            <h3><i class="fa-solid fa-table-list"></i> سجل بنود الـ Dataset المرجعية</h3>
+                            <span class="badge" id="dataset-total-badge">10 بنود معتمدة</span>
+                        </div>
+                        <div class="notes-grid" id="dataset-items-container">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB RESEARCHER: MEMORY & COGNITIVE PROFILE -->
+            <section id="tab-researcher" class="tab-pane">
+                <div class="library-container">
+                    <div class="card" style="border-right: 5px solid var(--accent);">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-brain"></i> الملف الإدراكي وذاكرة الباحث (Researcher Cognitive Memory)</h3>
+                            <p>يتعلم النظام تلقائياً من طريقة حوارك وأسلوبك المنطقي، ويسجل فرضياتك وأفكارك البحثية لمواصلة البناء عليها في كل نقاش.</p>
+                        </div>
+                        <div class="form-row" style="margin-top: 10px;">
+                            <div class="stat-card flex-1">
+                                <div class="stat-icon purple"><i class="fa-solid fa-user-graduate"></i></div>
+                                <div class="stat-details">
+                                    <span class="stat-num" id="profile-tone-text" style="font-size: 16px;">تحليلي أكاديمي</span>
+                                    <span class="stat-title">الأسلوب ونبرة الحوار المكتشفة</span>
+                                </div>
+                            </div>
+                            <div class="stat-card flex-1">
+                                <div class="stat-icon teal"><i class="fa-solid fa-lightbulb"></i></div>
+                                <div class="stat-details">
+                                    <span class="stat-num" id="profile-ideas-count" style="font-size: 20px;">0</span>
+                                    <span class="stat-title">الأفكار والفرضيات المسجلة</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 18px;">
+                            <h4 style="font-size: 14px; margin-bottom: 8px;"><i class="fa-solid fa-tags"></i> مجالات واهتمامات الباحث التي رصدها الذكاء الاصطناعي:</h4>
+                            <div id="profile-interests-tags" class="book-topics">
+                                <span class="topic-tag">معلوماتية التمريض</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="books-section">
+                        <div class="section-header">
+                            <h3><i class="fa-solid fa-feather-pointed"></i> سجل فرضيات وأفكار الباحث المحفوظة</h3>
+                            <span class="badge" id="ideas-total-badge">0 أفكار مسجلة</span>
+                        </div>
+                        <div class="notes-grid" id="researcher-ideas-container">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: BOOKS & LIBRARY -->
+            <section id="tab-library" class="tab-pane">
+                <div class="library-container">
+                    <!-- Upload Card -->
+                    <div class="card upload-card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-cloud-arrow-up"></i> رفع كتاب أو مرجع تمريضي جديد</h3>
+                            <p>قم برفع ملفات الكتب (PDF, TXT, MD) ليتم تقسيمها، فهرستها، واستخراج الملاحظات تلقائياً في قاعدة البيانات.</p>
+                        </div>
+                        <form id="upload-form" class="upload-form">
+                            <div class="upload-dropzone" id="dropzone">
+                                <i class="fa-solid fa-file-pdf dropzone-icon"></i>
+                                <p class="dropzone-text">اسحب وأفلت ملف الكتاب هنا، أو <span>اضغط للاختيار</span></p>
+                                <span class="dropzone-hint">يدعم ملفات PDF, TXT بحد أقصى 50MB</span>
+                                <input type="file" id="book-file-input" accept=".pdf,.txt,.md" style="display: none;" required>
+                            </div>
+                            <div id="file-info-preview" class="file-preview" style="display: none;">
+                                <i class="fa-solid fa-file-lines" style="font-size: 20px; color: var(--primary);"></i>
+                                <span id="preview-file-name" style="font-weight: 700;">filename.pdf</span>
+                                <span id="preview-file-size" class="text-muted">(2.4 MB)</span>
+                                <button type="button" id="remove-file-btn" style="margin-right: auto; background: none; border: none; color: #ef4444; cursor: pointer; font-size: 13px;">
+                                    <i class="fa-solid fa-xmark"></i> إلغاء
+                                </button>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group flex-1">
+                                    <label>عنوان الكتاب أو المرجع (اختياري):</label>
+                                    <input type="text" id="book-custom-title" class="form-control" placeholder="مثال: Nursing Informatics and the Foundation of Knowledge">
+                                </div>
+                                <button type="submit" id="upload-btn" class="btn-primary" style="margin-top: 24px; min-width: 220px;">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i> حفظ وفهرسة الكتاب
+                                </button>
+                            </div>
+                            <div id="upload-status-alert" style="display: none; margin-top: 14px; padding: 12px 16px; border-radius: 8px; font-size: 13.5px; font-weight: 600;"></div>
+                            <div id="upload-progress" class="progress-bar-container" style="display: none;">
+                                <div class="progress-bar-fill" id="progress-fill"></div>
+                                <span class="progress-text" id="progress-label">جاري حفظ الكتاب وتحليل الفصول في قاعدة البيانات...</span>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Books Grid -->
+                    <div class="books-section">
+                        <div class="section-header">
+                            <h3><i class="fa-solid fa-layer-group"></i> الكتب والمراجع المفهرسة في قاعدة البيانات</h3>
+                            <span id="books-total-badge" class="badge">1 كتاب</span>
+                        </div>
+                        <div class="books-grid" id="books-list-container">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: NOTES & STUDY SUMMARIES -->
+            <section id="tab-notes" class="tab-pane">
+                <div class="notes-container">
+                    <div class="notes-toolbar">
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="notes-search-input" placeholder="بحث في الملاحظات والملخصات..." class="form-control">
+                        </div>
+                        <div class="category-filters" id="notes-category-filters">
+                            <button class="filter-btn active" data-cat="">الكل</button>
+                            <button class="filter-btn" data-cat="Concept Summary">ملخصات المفاهيم</button>
+                            <button class="filter-btn" data-cat="Terminology">المصطلحات (Terminologies)</button>
+                            <button class="filter-btn" data-cat="Clinical Workflow">سير العمل السريري</button>
+                        </div>
+                        <button class="btn-primary" id="open-new-note-modal">
+                            <i class="fa-solid fa-plus"></i> إضافة ملاحظة جديدة
+                        </button>
+                    </div>
+
+                    <div class="notes-grid" id="notes-list-container">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: FREQUENT QUESTIONS & ANALYTICS -->
+            <section id="tab-analytics" class="tab-pane">
+                <div class="analytics-container">
+                    <!-- Top stats cards -->
+                    <div class="stats-overview-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon purple"><i class="fa-solid fa-book-bookmark"></i></div>
+                            <div class="stat-details">
+                                <span class="stat-num" id="stat-total-books">0</span>
+                                <span class="stat-title">الكتب المسجلة</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon teal"><i class="fa-solid fa-file-lines"></i></div>
+                            <div class="stat-details">
+                                <span class="stat-num" id="stat-total-pages">0</span>
+                                <span class="stat-title">الصفحات المحللة</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon blue"><i class="fa-solid fa-messages"></i></div>
+                            <div class="stat-details">
+                                <span class="stat-num" id="stat-total-messages">0</span>
+                                <span class="stat-title">المحادثات السريرية</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon amber"><i class="fa-solid fa-fire"></i></div>
+                            <div class="stat-details">
+                                <span class="stat-num" id="stat-total-repeated">0</span>
+                                <span class="stat-title">أنماط الأسئلة المكررة</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts & Tables Layout -->
+                    <div class="analytics-layout-grid">
+                        <!-- Repeated Questions Table Card -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-fire-flame-curved"></i> سجل الأسئلة الأكثر تكراراً (Repeated Queries)</h3>
+                                <p>يسجل النظام تلقائياً تشابه الأسئلة ويحسب تكرار كل مفهوم تمريضي للمساعدة في المراجعة المركزة.</p>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="custom-table" id="repeated-questions-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 48%;"><i class="fa-solid fa-circle-question"></i> السؤال / المفهوم المطروح</th>
+                                            <th style="text-align: center; width: 22%;"><i class="fa-solid fa-folder-tree"></i> التصنيف التمريضي</th>
+                                            <th style="text-align: center; width: 14%;"><i class="fa-solid fa-arrow-trend-up"></i> مرات التكرار</th>
+                                            <th style="text-align: right; width: 16%;"><i class="fa-regular fa-clock"></i> آخر استفسار</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="repeated-table-body">
+                                        <!-- Populated via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Chart Card -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-chart-pie"></i> توزيع موضوعات الملاحظات والكتب</h3>
+                                <p>توزيع المحتوى المفهرس حسب مجالات Nursing Informatics</p>
+                            </div>
+                            <div class="chart-box">
+                                <canvas id="categoriesChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal: Add New Note -->
+    <div class="modal-overlay" id="note-modal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-pen-to-square"></i> إضافة ملاحظة سريرية جديدة</h3>
+                <button class="modal-close" id="close-note-modal">&times;</button>
+            </div>
+            <form id="new-note-form">
+                <div class="form-group">
+                    <label>عنوان الملاحظة:</label>
+                    <input type="text" id="note-title" class="form-control" required placeholder="مثال: أهمية الربط بين SNOMED CT و ICNP">
+                </div>
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label>التصنيف:</label>
+                        <select id="note-category" class="form-control">
+                            <option value="Concept Summary">ملخص مفهوم (Concept Summary)</option>
+                            <option value="Terminology">المصطلحات والمعايير (Terminology)</option>
+                            <option value="Clinical Workflow">سير العمل السريري (Clinical Workflow)</option>
+                            <option value="Ethics & HIPAA">الأخلاقيات والخصوصية (Ethics & HIPAA)</option>
+                        </select>
+                    </div>
+                    <div class="form-group flex-1">
+                        <label>الوسوم (مفصولة بفواصل):</label>
+                        <input type="text" id="note-tags" class="form-control" placeholder="EHR, Safety, CDSS">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>المحتوى التمريضي:</label>
+                    <textarea id="note-content" class="form-control" rows="5" required placeholder="سجل النقاط والملاحظات السريرية الهامة هنا..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" id="cancel-note-modal">إلغاء</button>
+                    <button type="submit" class="btn-primary">حفظ الملاحظة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main JavaScript App -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
