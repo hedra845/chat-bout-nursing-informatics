@@ -139,15 +139,33 @@ def chat():
     profile_update = analyze_and_update_researcher_profile(session_id, message)
     researcher_ctx = get_researcher_context(session_id)
 
-    # 3. Retrieve relevant textbook knowledge chunks (RAG)
-    relevant_chunks = search_relevant_chunks(message, book_id=book_id if book_id else None, limit=3)
+    # 3. Retrieve recent conversation history for memory continuity
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT role, content FROM chat_messages 
+        WHERE session_id = ? 
+        ORDER BY id DESC LIMIT 6
+    """, (session_id,))
+    recent_history = [dict(r) for r in reversed(cursor.fetchall())]
 
-    # 4. Model Generation Choice (Adapting to researcher style & memory)
+    # Check for server-configured Gemini API Key if not passed by client
+    if not api_key:
+        cursor.execute("SELECT value FROM system_settings WHERE key = 'gemini_api_key'")
+        sys_key_row = cursor.fetchone()
+        if sys_key_row and sys_key_row['value']:
+            api_key = sys_key_row['value'].strip()
+    conn.close()
+
+    # 4. Retrieve relevant textbook knowledge chunks (RAG)
+    relevant_chunks = search_relevant_chunks(message, book_id=book_id if book_id else None, limit=4)
+
+    # 5. Model Generation Choice (Adapting to researcher style & memory)
     model_used = "Built-in Nursing Informatics AI"
     response_text = ""
 
     if (mode == 'gemini' or (mode == 'auto' and api_key)) and api_key:
-        ai_resp, provider = call_gemini_api(api_key, message, relevant_chunks, preferred_lang=preferred_lang, researcher_profile=researcher_ctx)
+        ai_resp, provider = call_gemini_api(api_key, message, relevant_chunks, preferred_lang=preferred_lang, researcher_profile=researcher_ctx, chat_history=recent_history)
         if ai_resp:
             response_text = ai_resp
             model_used = provider
@@ -158,7 +176,7 @@ def chat():
     else:
         response_text = generate_local_response(message, relevant_chunks, preferred_lang=preferred_lang, researcher_profile=researcher_ctx)
 
-    # 5. Save to Chat History
+    # 6. Save to Chat History
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -443,6 +461,82 @@ def get_dashboard_stats():
             "notes_by_cat": notes_by_cat
         }
     })
+
+# --- SYSTEM & ADMIN DASHBOARD ROUTES ---
+
+@app.route('/api/admin/settings', methods=['GET', 'POST'])
+def manage_settings():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        data = request.json or {}
+        for k, v in data.items():
+            cursor.execute("""
+                INSERT INTO system_settings (key, value, updated_at) 
+                VALUES (?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+            """, (k, str(v)))
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True, "message": "تم حفظ الإعدادات بنجاح"})
+
+    cursor.execute("SELECT key, value FROM system_settings")
+    rows = cursor.fetchall()
+    settings = {r['key']: r['value'] for r in rows}
+    
+    # Hide full Gemini key in GET response for security
+    raw_key = settings.get('gemini_api_key', '')
+    masked_key = (raw_key[:6] + "..." + raw_key[-4:]) if len(raw_key) > 10 else raw_key
+
+    # System overview stats for Admin
+    cursor.execute("SELECT COUNT(*) as c FROM books")
+    total_books = cursor.fetchone()['c']
+    cursor.execute("SELECT COUNT(*) as c FROM book_chunks")
+    total_chunks = cursor.fetchone()['c']
+    cursor.execute("SELECT COUNT(*) as c FROM reference_dataset")
+    total_dataset = cursor.fetchone()['c']
+    cursor.execute("SELECT COUNT(*) as c FROM chat_messages")
+    total_chats = cursor.fetchone()['c']
+    conn.close()
+
+    return jsonify({
+        "success": True,
+        "settings": settings,
+        "masked_gemini_key": masked_key,
+        "is_gemini_connected": bool(raw_key),
+        "system_status": {
+            "total_books": total_books,
+            "total_chunks": total_chunks,
+            "total_dataset_entries": total_dataset,
+            "total_chats": total_chats,
+            "engine": "Hybrid (RAG + Gemini 1.5/2.0 Flash Fallback)",
+            "status": "Online & Operational"
+        }
+    })
+
+@app.route('/api/admin/test-gemini', methods=['POST'])
+def test_gemini_connection():
+    data = request.json or {}
+    key = data.get('api_key', '').strip()
+    if not key:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT value FROM system_settings WHERE key = 'gemini_api_key'")
+        row = cursor.fetchone()
+        conn.close()
+        if row and row['value']:
+            key = row['value'].strip()
+
+    if not key:
+        return jsonify({"success": False, "error": "لم يتم إدخال مفتاح Gemini API"}), 400
+
+    test_prompt = "Say 'OK' in one word if connected."
+    res_text, provider = call_gemini_api(key, test_prompt, [], preferred_lang='en')
+    if res_text:
+        return jsonify({"success": True, "message": "تم الاتصال بـ Google Gemini API بنجاح!", "provider": provider, "sample": res_text[:100]})
+    else:
+        return jsonify({"success": False, "error": f"فشل الاتصال: {provider}"}), 400
 
 if __name__ == '__main__':
     init_db()

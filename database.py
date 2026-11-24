@@ -130,7 +130,22 @@ def init_db():
     )
     ''')
 
-    # 9. Pre-populate default seed knowledge if empty
+    # 9. System & AI Settings Table (For Admin Dashboard & Cloud Integration)
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS system_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    ''')
+
+    # Default system settings if not present
+    cursor.execute("INSERT OR IGNORE INTO system_settings (key, value) VALUES ('gemini_api_key', '')")
+    cursor.execute("INSERT OR IGNORE INTO system_settings (key, value) VALUES ('default_ai_mode', 'auto')")
+    cursor.execute("INSERT OR IGNORE INTO system_settings (key, value) VALUES ('ai_temperature', '0.4')")
+    cursor.execute("INSERT OR IGNORE INTO system_settings (key, value) VALUES ('system_prompt', 'أنت مساعد وباحث خبير في معلوماتية التمريض (Nursing Informatics AI Assistant & Academic Research Mentor).')")
+
+    # 10. Pre-populate default seed knowledge if empty
     cursor.execute('SELECT COUNT(*) as count FROM books')
     count = cursor.fetchone()['count']
     if count == 0:

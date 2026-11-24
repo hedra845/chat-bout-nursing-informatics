@@ -137,6 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try { initNotes(); } catch (e) { console.error('Notes init failed:', e); }
     try { initAnalytics(); } catch (e) { console.error('Analytics init failed:', e); }
     try { initDatasetFilters(); } catch (e) { console.error('Dataset filters init failed:', e); }
+    try { initAdminPanel(); } catch (e) { console.error('Admin panel init failed:', e); }
     try { applyUiLanguage(currentUiLang); } catch (e) { console.error('Language apply failed:', e); }
 
     loadDashboardStats();
@@ -188,6 +189,8 @@ function initNavigation() {
                 loadBooks();
             } else if (tab === 'notes') {
                 loadNotes();
+            } else if (tab === 'admin') {
+                loadAdminSettings();
             }
         });
     });
@@ -1213,6 +1216,132 @@ function renderResearcherIdeas(ideas) {
     `).join('');
 }
 
+// --- ADMIN DASHBOARD & AI SETTINGS LOGIC ---
+
+function initAdminPanel() {
+    const form = document.getElementById('admin-settings-form');
+    const testBtn = document.getElementById('btn-test-gemini');
+
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const key = document.getElementById('admin-gemini-key').value.trim();
+            const mode = document.getElementById('admin-default-mode').value;
+            const temp = document.getElementById('admin-temperature').value;
+            const prompt = document.getElementById('admin-system-prompt').value.trim();
+
+            const payload = {
+                default_ai_mode: mode,
+                ai_temperature: temp,
+                system_prompt: prompt
+            };
+            if (key) {
+                payload.gemini_api_key = key;
+                localStorage.setItem('nurse_gemini_key', key);
+            }
+
+            try {
+                const res = await fetch('/api/admin/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('✅ تم حفظ كافة إعدادات المنظومة وربط الذكاء الاصطناعي بنجاح!');
+                    loadAdminSettings();
+                } else {
+                    alert('❌ حدث خطأ: ' + (data.error || 'فشل الحفظ'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('⚠️ تم حفظ الإعدادات محلياً في متصفحك.');
+            }
+        });
+    }
+
+    if (testBtn) {
+        testBtn.addEventListener('click', async () => {
+            const alertBox = document.getElementById('admin-test-alert');
+            const key = document.getElementById('admin-gemini-key').value.trim() || localStorage.getItem('nurse_gemini_key');
+            
+            if (alertBox) {
+                alertBox.style.display = 'block';
+                alertBox.className = 'alert alert-info';
+                alertBox.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري فحص الاتصال بـ Google Gemini API...';
+            }
+
+            try {
+                const res = await fetch('/api/admin/test-gemini', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ api_key: key })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alertBox.className = 'alert alert-success';
+                    alertBox.innerHTML = `✅ <strong>نجاح الاتصال!</strong> ${data.message} (${data.provider})`;
+                } else {
+                    alertBox.className = 'alert alert-danger';
+                    alertBox.innerHTML = `❌ <strong>فشل الاتصال:</strong> ${data.error}`;
+                }
+            } catch (err) {
+                alertBox.className = 'alert alert-warning';
+                alertBox.innerHTML = '⚠️ تعذر الاتصال بالسيرفر لفحص المفتاح.';
+            }
+        });
+    }
+}
+
+async function loadAdminSettings() {
+    try {
+        const res = await fetch('/api/admin/settings');
+        const data = await res.json();
+        if (!data.success) return;
+
+        const s = data.settings || {};
+        const st = data.system_status || {};
+
+        const elBooks = document.getElementById('admin-total-books');
+        const elChunks = document.getElementById('admin-total-chunks');
+        const elDataset = document.getElementById('admin-total-dataset');
+        const elChats = document.getElementById('admin-total-chats');
+        const elEngine = document.getElementById('admin-engine-status');
+        const elGemini = document.getElementById('admin-gemini-status');
+
+        if (elBooks) elBooks.textContent = st.total_books || '0';
+        if (elChunks) elChunks.textContent = `${st.total_chunks || 0} مقطع معرفي (Chunks)`;
+        if (elDataset) elDataset.textContent = st.total_dataset_entries || '0';
+        if (elChats) elChats.textContent = st.total_chats || '0';
+        if (elEngine) elEngine.textContent = st.engine || 'Hybrid Engine';
+
+        if (elGemini) {
+            if (data.is_gemini_connected) {
+                elGemini.className = 'text-success';
+                elGemini.innerHTML = '<i class="fa-solid fa-circle-check"></i> الربط مع Gemini مفعل ونشط';
+            } else {
+                elGemini.className = 'text-warning';
+                elGemini.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Gemini غير مربوط (يعمل بالمحرك المحلي)';
+            }
+        }
+
+        const inputKey = document.getElementById('admin-gemini-key');
+        const inputMode = document.getElementById('admin-default-mode');
+        const inputTemp = document.getElementById('admin-temperature');
+        const inputPrompt = document.getElementById('admin-system-prompt');
+
+        if (inputKey && data.masked_gemini_key) {
+            inputKey.placeholder = `المفتاح مسجل: ${data.masked_gemini_key}`;
+        }
+        if (inputMode && s.default_ai_mode) inputMode.value = s.default_ai_mode;
+        if (inputTemp && s.ai_temperature) inputTemp.value = s.ai_temperature;
+        if (inputPrompt && s.system_prompt) inputPrompt.value = s.system_prompt;
+
+    } catch (err) {
+        console.warn('Could not load admin settings:', err);
+    }
+}
+
 // Bind functions to window explicitly so HTML inline onclick never fails
 window.askAboutBook = askAboutBook;
 window.deleteBook = deleteBook;
@@ -1220,5 +1349,6 @@ window.togglePinNote = togglePinNote;
 window.deleteNote = deleteNote;
 window.translateMessage = translateMessage;
 window.translateElementText = translateElementText;
+window.loadAdminSettings = loadAdminSettings;
 window.translateNote = translateNote;
 window.askAboutDatasetItem = askAboutDatasetItem;

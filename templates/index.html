@@ -1406,6 +1406,10 @@ html[dir="ltr"] .content-quote {
                     <i class="fa-solid fa-chart-line"></i>
                     <span data-i18n="analyticsNav">الأسئلة المتكررة والإحصائيات</span>
                 </button>
+                <button class="nav-item" data-tab="admin">
+                    <i class="fa-solid fa-gears"></i>
+                    <span>لوحة التحكم وإعدادات AI</span>
+                </button>
             </nav>
 
             <!-- Mode & API Settings in Sidebar -->
@@ -1756,6 +1760,129 @@ html[dir="ltr"] .content-quote {
                             <div class="chart-box">
                                 <canvas id="categoriesChart"></canvas>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 7: ADMIN & AI CONTROL PANEL -->
+            <section class="tab-pane" id="tab-admin">
+                <div class="analytics-card mb-4" style="border-right: 4px solid var(--primary);">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-server"></i> حالة المنظومة والذكاء الاصطناعي (System Overview)</h2>
+                    </div>
+                    <div class="stats-overview-grid" style="margin-top: 15px;">
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: rgba(2, 132, 199, 0.1); color: var(--primary);">
+                                <i class="fa-solid fa-book"></i>
+                            </div>
+                            <div class="stat-details">
+                                <span class="stat-label">المراجع والكتب المفهرسة</span>
+                                <h3 id="admin-total-books">-</h3>
+                                <small class="text-muted" id="admin-total-chunks">- مقطع معرفي (Chunks)</small>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: rgba(13, 148, 136, 0.1); color: var(--secondary);">
+                                <i class="fa-solid fa-database"></i>
+                            </div>
+                            <div class="stat-details">
+                                <span class="stat-label">المفاهيم السريرية المعتمدة</span>
+                                <h3 id="admin-total-dataset">-</h3>
+                                <small class="text-muted">Benchmark Knowledge Base</small>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: rgba(99, 102, 241, 0.1); color: var(--accent);">
+                                <i class="fa-solid fa-comments"></i>
+                            </div>
+                            <div class="stat-details">
+                                <span class="stat-label">إجمالي المحادثات المسجلة</span>
+                                <h3 id="admin-total-chats">-</h3>
+                                <small class="text-muted">محادثة وبحث سريري</small>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--success);">
+                                <i class="fa-solid fa-microchip"></i>
+                            </div>
+                            <div class="stat-details">
+                                <span class="stat-label">حالة المحرك الحالي</span>
+                                <h3 id="admin-engine-status" style="font-size: 15px;">جاهز ومتصل</h3>
+                                <small id="admin-gemini-status" class="text-success">الربط مع Gemini مفعل</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="notes-grid" style="grid-template-columns: 1.2fr 1fr;">
+                    <!-- Gemini & AI Connection Form -->
+                    <div class="card p-4">
+                        <h3 class="mb-3"><i class="fa-solid fa-key text-primary"></i> إعدادات وربط Google Gemini API السحابي</h3>
+                        <p class="text-muted mb-4" style="font-size: 13.5px;">
+                            يقوم النظام باستعمال المحتوى المرفوع لديك في الإجابة، وعند توفر مفتاح Gemini API يتم إرسال المحتوى إليه لتحليل الأسئلة المفتوحة والمعقدة والدردشة الطبية المتقدمة.
+                        </p>
+                        
+                        <form id="admin-settings-form">
+                            <div class="form-group mb-3">
+                                <label for="admin-gemini-key"><strong>Google Gemini API Key:</strong></label>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="password" id="admin-gemini-key" class="form-control" placeholder="AIzaSy..." />
+                                    <button type="button" class="btn btn-secondary" id="btn-test-gemini" style="white-space: nowrap;">
+                                        <i class="fa-solid fa-vial"></i> اختبار الاتصال
+                                    </button>
+                                </div>
+                                <small class="text-muted">المفتاح يتم حفظه بأمان في قاعدة البيانات السحابية ويمكن استخدامه لجميع الجلسات.</small>
+                                <div id="admin-test-alert" style="margin-top: 8px; display: none;"></div>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label for="admin-default-mode"><strong>وضع عمل الذكاء الاصطناعي الافتراضي:</strong></label>
+                                <select id="admin-default-mode" class="form-control">
+                                    <option value="auto">تلقائي هجين (Auto: بحث محلي في الكتب + Gemini للدردشة المفتوحة)</option>
+                                    <option value="gemini">إجباري Gemini API دائماً (Cloud Reasoning)</option>
+                                    <option value="local">محرك محلي فقط بدون سحابة (Offline / Local Standalone)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label for="admin-temperature"><strong>درجة الإبداع والعمق (Creativity / Temperature):</strong></label>
+                                <select id="admin-temperature" class="form-control">
+                                    <option value="0.2">دقيق جداً ومتقيد بالنص (0.2 - Conservative)</option>
+                                    <option value="0.4">متوازن تحليلي (0.4 - Balanced & Academic - الموصى به)</option>
+                                    <option value="0.7">نقاشي وتوليدي واسع (0.7 - Creative Dialogue)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group mb-4">
+                                <label for="admin-system-prompt"><strong>موجه النظام الرئيسي (System Prompt):</strong></label>
+                                <textarea id="admin-system-prompt" class="form-control" rows="3" placeholder="توجيهات المساعد الذكي..."></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                                <i class="fa-solid fa-floppy-disk"></i> حفظ كافة إعدادات المنظومة
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Knowledge & Capabilities Summary -->
+                    <div class="card p-4">
+                        <h3 class="mb-3"><i class="fa-solid fa-brain text-accent"></i> إمكانيات المحرك المدمجة (Capabilities)</h3>
+                        <div class="alert alert-info mb-3" style="font-size: 13px; line-height: 1.6;">
+                            <i class="fa-solid fa-circle-info"></i> <strong>كيف يعمل الموديل حالياً؟</strong><br>
+                            1. <strong>فهم عميق للمحتوى:</strong> يقرأ من كافة الكتب والملفات الـ 11 المفهرسة وقاعدة البيانات المعتمدة.<br>
+                            2. <strong>ذاكرة الباحث:</strong> يتذكر فرضياتك وأسلوب تفكيرك السريري ويقارن أسئلتك الجديدة بالأفكار السابقة.<br>
+                            3. <strong>ربط Gemini المتعدد:</strong> يدعم موديلات <code>gemini-1.5-flash</code> و <code>gemini-2.0-flash</code> تلقائياً.<br>
+                            4. <strong>دردشة مفتوحة:</strong> لا يقتصر على الأسئلة النصية، بل يناقش الفرضيات، سيناريوهات المستشفى، وتحديات الـ CDSS و Alert Fatigue.
+                        </div>
+
+                        <div class="quick-tips-card">
+                            <h4 style="font-size: 14px; margin-bottom: 8px;"><i class="fa-solid fa-lightbulb text-warning"></i> نصائح لتجربة محادثة أفضل:</h4>
+                            <ul style="padding-right: 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.8;">
+                                <li>جرّب سؤاله: <em>"ماذا فهمت من المحاضرة عن أدوار ممرض المعلوماتية؟"</em></li>
+                                <li>اطلب منه نقاش سيناريو: <em>"كيف نواجه إجهاد التنبيهات في العناية المركزة؟"</em></li>
+                                <li>اختبر ربطه للأفكار: <em>"قارن بين هرم DIKW وبين ما سجلته في ذاكرتي."</em></li>
+                            </ul>
                         </div>
                     </div>
                 </div>

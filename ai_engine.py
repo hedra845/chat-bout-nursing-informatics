@@ -287,73 +287,92 @@ def generate_local_response(query, context_chunks, preferred_lang=None, research
 
     return response
 
-def call_gemini_api(api_key, query, context_chunks, preferred_lang=None, researcher_profile=None):
+def call_gemini_api(api_key, query, context_chunks, preferred_lang=None, researcher_profile=None, chat_history=None):
     """
-    Open-domain, highly synthesized Gemini reasoning:
+    Open-domain, highly conversational Gemini reasoning:
     Instructs Gemini to deeply interpret and explain what it understood,
-    think critically, debate, and respond to ANY open question without bounds.
+    chat about uploaded content or general nursing knowledge, debate, and respond to ANY question.
+    Supports multiple models: gemini-1.5-flash, gemini-2.0-flash, gemini-1.5-pro.
     """
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    if not api_key:
+        return None, "No API key provided"
+
+    # Models list to try
+    models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]
     
     is_ar = (preferred_lang == 'ar') if preferred_lang in ['ar', 'en'] else is_arabic_text(query)
-    lang_instruction = "Respond in fluent, articulate Arabic." if is_ar else "Respond in fluent, precise English."
+    lang_instruction = "تحدث بلغة عربية أكاديمية سلسة وواضحة جداً." if is_ar else "Respond in fluent, precise academic English."
 
     style = researcher_profile.get("style", "تحليلي أكاديمي منطقي") if researcher_profile else "تحليلي أكاديمي منطقي"
     past_ideas = researcher_profile.get("ideas", []) if researcher_profile else []
-    ideas_summary = f"Researcher's recorded ideas & past thoughts: {', '.join(past_ideas[:3])}" if past_ideas else "No past recorded thoughts yet."
+    ideas_summary = f"أفكار وفرضيات الباحث السابقة: {', '.join(past_ideas[:3])}" if past_ideas else "لا توجد أفكار مسجلة مسبقاً."
 
+    # Build reference context if available
     context_str = ""
-    for idx, c in enumerate(context_chunks, 1):
-        context_str += f"\n--- Reference Excerpt {idx} (Page {c['page_number']}) ---\n{c['content']}\n"
+    if context_chunks:
+        for idx, c in enumerate(context_chunks, 1):
+            src = f"كتاب/مرجع صفحة {c.get('page_number', '?')}" if c.get('source_type') == 'book' else "قاعدة بيانات المرجع المعتمدة"
+            context_str += f"\n--- اقتباس من المحتوى المرفوع {idx} ({src}) ---\n{c['content']}\n"
+    else:
+        context_str = "لم يتم العثور على اقتباس مباشر محدد من الكتب المرفوعة، اعتمد على مخزونك المعرفي العام في معلوماتية التمريض والعلوم الطبية."
+
+    # Build recent conversation history context if provided
+    history_str = ""
+    if chat_history and len(chat_history) > 0:
+        history_str = "\n--- سياق الحوار السابق مع الباحث ---\n"
+        for msg in chat_history[-6:]:
+            role_label = "الباحث" if msg.get("role") == "user" else "المساعد الذكي"
+            history_str += f"{role_label}: {msg.get('content', '')[:300]}\n"
 
     system_instruction = (
-        "You are an Advanced Autonomous Nursing Informatics Research Partner, Academic Mentor, and Intelligent Intellectual Peer. "
-        "CRITICAL INSTRUCTION: Do NOT just quote or dump textbook definitions. "
-        "The researcher specifically demands that you EXPLAIN WHAT YOU UNDERSTOOD from their question and the references. "
-        "Synthesize the deeper clinical meaning, provide critical reasoning, and engage in an open-ended dialogue. "
-        "You are capable of discussing ANY open scientific or general question the researcher asks. "
-        f"The researcher's detected thinking style is: '{style}'. Adapt your tone to match. "
-        f"{ideas_summary} "
-        "Format your answer with clear section titles:\n"
-        "1. 📌 ما فهمته من سؤالك وسياق البحث (What I Understood)\n"
-        "2. 📖 الدليل من المراجع (Supporting Evidence - brief)\n"
-        "3. 🔬 التحليل السريري والنقدي (Critical & Clinical Synthesis)\n"
-        "4. 💡 أسئلة ومسارات مقترحة للنقاش (Next Questions to Explore)\n"
+        "أنت 'المساعد الذكي لمعلوماتية التمريض' (Advanced Nursing Informatics AI & Clinical Research Mentor). "
+        "مهمتك الرئيسية هي التفاعل والدردشة المعمقة مع الباحث حول المحتوى المرفوع، والربط بينه وبين المعرفة الطبية الشاملة. "
+        "تعليمات أساسية:\n"
+        "1. ناقش واشرح ما فهمته من سؤال الباحث بعمق ومنطق سريري، ولا تكتفِ بنسخ ولصق النصوص.\n"
+        "2. إذا كان السؤال متعلقاً بالمحتوى أو الكتب المرفوعة، استشهد بالمعلومات الواردة فيها ووضح مغزاها العملي عند سرير المريض (Bedside care) ودعم القرار السريري (CDSS).\n"
+        "3. إذا كان السؤال عاماً أو خارج المحتوى المرفوع، استخدم معلوماتك الطبية والتمريضية الشاملة للإجابة بدقة واحترافية.\n"
+        "4. اربط النقاش بأسلوب تفكير الباحث وأفكاره السابقة للمحافظة على استمرارية الحوار العلمي.\n"
+        f"أسلوب الحوار المفضل: '{style}'. {ideas_summary}\n"
         f"{lang_instruction}"
     )
 
-    user_prompt = f"""Available Textbook Knowledge (Use if relevant, or rely on your broader intelligence):
-{context_str}
+    user_prompt = f"""{system_instruction}
 
-Researcher's Inquiry / Open Question:
+المحتوى المرفوع والمراجع المتوفرة:
+{context_str}
+{history_str}
+سؤال / استفسار الباحث:
 {query}
 
-Please provide your thoughtful, synthesized response explaining your understanding and insights."""
+أجب بطريقة حوارية ذكية ومنسقة (مع إبراز ما فهمته، التحليل والتطبيق السريري، ونقاط المتابعة):"""
 
-    payload = {
-        "contents": [
-            {
-                "parts": [
-                    {"text": system_instruction + "\n\n" + user_prompt}
-                ]
+    last_error = ""
+    for model_name in models:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {"text": user_prompt}
+                    ]
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.5,
+                "maxOutputTokens": 2048
             }
-        ],
-        "generationConfig": {
-            "temperature": 0.4,
-            "maxOutputTokens": 1500
         }
-    }
-
-    headers = {"Content-Type": "application/json"}
+        headers = {"Content-Type": "application/json"}
+        
+        try:
+            res = requests.post(url, json=payload, headers=headers, timeout=25)
+            if res.status_code == 200:
+                data = res.json()
+                generated_text = data['candidates'][0]['content']['parts'][0]['text']
+                return generated_text, f"Google Gemini API ({model_name})"
+            else:
+                last_error = f"Gemini ({model_name}) error {res.status_code}: {res.text[:150]}"
+        except Exception as e:
+            last_error = f"Gemini ({model_name}) exception: {str(e)}"
     
-    try:
-        res = requests.post(url, json=payload, headers=headers, timeout=20)
-        if res.status_code == 200:
-            data = res.json()
-            generated_text = data['candidates'][0]['content']['parts'][0]['text']
-            return generated_text, "Gemini AI (Deep Reasoning Engine)"
-        else:
-            err_msg = f"Gemini API returned status {res.status_code}: {res.text}"
-            return None, err_msg
-    except Exception as e:
-        return None, str(e)
+    return None, last_error
