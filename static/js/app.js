@@ -489,8 +489,6 @@ ${query}
         error: `تعذر الاتصال بـ Gemini API: ${lastError}`
     };
 }
-    });
-}
 
 function appendMessage(role, text, sources = [], modelUsed = '') {
     const box = document.getElementById('chat-messages-box');
