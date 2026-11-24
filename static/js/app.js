@@ -1,8 +1,12 @@
-// State Management
-let currentTab = 'chat';
-let currentUiLang = localStorage.getItem('nurse_ui_lang') || 'ar';
-let booksData = [];
-let categoriesChart = null;
+// State Management (Guard against double declaration)
+window.currentTab = window.currentTab || 'chat';
+var currentTab = window.currentTab;
+window.currentUiLang = localStorage.getItem('nurse_ui_lang') || 'ar';
+var currentUiLang = window.currentUiLang;
+window.booksData = window.booksData || [];
+var booksData = window.booksData;
+window.categoriesChart = window.categoriesChart || null;
+var categoriesChart = window.categoriesChart;
 
 console.log('NurseInfo AI: App.js loaded, initializing...');
 
