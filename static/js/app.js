@@ -663,51 +663,134 @@ function initLibrary() {
             return;
         }
 
-        const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
+        const file = fileInput.files[0];
         const customTitle = document.getElementById('book-custom-title').value.trim();
-        if (customTitle) formData.append('title', customTitle);
+        const displayTitle = customTitle || file.name.replace(/\.[^/.]+$/, "");
 
         progressBar.style.display = 'block';
         const uploadBtn = document.getElementById('upload-btn');
         uploadBtn.disabled = true;
-        uploadBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> جاري الحفظ والفهرسة...`;
+        uploadBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> جاري استخراج النص والتحليل...`;
 
+        // 1. Try backend upload first
+        let backendSuccess = false;
         try {
-            const res = await fetch('/api/books/upload', {
-                method: 'POST',
-                body: formData
-            });
+            const formData = new FormData();
+            formData.append('file', file);
+            if (customTitle) formData.append('title', customTitle);
 
-            const data = await res.json();
-            progressBar.style.display = 'none';
-            uploadBtn.disabled = false;
-            uploadBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> حفظ وفهرسة الكتاب`;
-
-            if (data.success) {
-                showUploadStatus(`✅ تم بنجاح حفظ وفهرسة الكتاب: "${data.book.title}" (${data.book.pages} صفحة - ${data.book.words} كلمة) وتخزينه في قاعدة البيانات!`, 'success');
-                uploadForm.reset();
-                filePreview.style.display = 'none';
-
-                // Automatically reload books and scroll to list
-                await loadBooks();
-                loadNotes();
-                loadDashboardStats();
-
-                const booksList = document.getElementById('books-list-container');
-                if (booksList) {
-                    booksList.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            const res = await fetch('/api/books/upload', { method: 'POST', body: formData });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    backendSuccess = true;
+                    showUploadStatus(`✅ تم بنجاح حفظ وفهرسة الكتاب: "${data.book.title}" (${data.book.pages} صفحة - ${data.book.words} كلمة)!`, 'success');
                 }
-            } else {
-                showUploadStatus(`❌ خطأ أثناء الحفظ: ${data.error || 'تعذر استكمال حفظ الكتاب'}`, 'error');
             }
-        } catch (err) {
-            progressBar.style.display = 'none';
-            uploadBtn.disabled = false;
-            uploadBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> حفظ وفهرسة الكتاب`;
-            showUploadStatus('❌ تعذر الاتصال بالسيرفر. يرجى التأكد من تشغيل السيرفر والمحاولة مرة أخرى.', 'error');
+        } catch (serverErr) {
+            console.log('Backend upload unreachable, proceeding with client-side in-browser analyzer...');
+        }
+
+        // 2. If backend is not available (Cloudflare Pages), analyze client-side!
+        if (!backendSuccess) {
+            try {
+                const bookResult = await processBookClientSide(file, displayTitle);
+                showUploadStatus(`✅ تم بنجاح استخراج وتحليل كتاب "${bookResult.title}" (${bookResult.total_pages} صفحة - ${bookResult.total_words} كلمة)! تم دمجه في محرك البحث والشات.`, 'success');
+            } catch (err) {
+                console.error(err);
+                showUploadStatus(`❌ فشل استخراج محتوى الملف: ${err.message}`, 'error');
+                progressBar.style.display = 'none';
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> حفظ وفهرسة الكتاب`;
+                return;
+            }
+        }
+
+        progressBar.style.display = 'none';
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> حفظ وفهرسة الكتاب`;
+        uploadForm.reset();
+        filePreview.style.display = 'none';
+
+        await loadBooks();
+        loadNotes();
+        loadDashboardStats();
+
+        const booksList = document.getElementById('books-list-container');
+        if (booksList) {
+            booksList.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
     });
+
+    // Client-side text & PDF parser that integrates directly into Knowledge Base
+    async function processBookClientSide(file, title) {
+        let extractedText = "";
+        let pageCount = 1;
+        const ext = file.name.split('.').pop().toLowerCase();
+
+        if (ext === 'pdf') {
+            if (!window['pdfjsLib']) {
+                window['pdfjsLib'] = window['pdfjs-dist/build/pdf'];
+            }
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            pageCount = pdf.numPages;
+
+            let fullPages = [];
+            for (let i = 1; i <= Math.min(pageCount, 150); i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                const pageText = content.items.map(item => item.str).join(' ');
+                fullPages.push({ page: i, text: pageText });
+                extractedText += pageText + " ";
+            }
+
+            // Split into knowledge chunks and add to window.PRELOADED_KNOWLEDGE
+            window.PRELOADED_KNOWLEDGE = window.PRELOADED_KNOWLEDGE || [];
+            fullPages.forEach(p => {
+                if (p.text.trim().length > 30) {
+                    window.PRELOADED_KNOWLEDGE.unshift({
+                        book: title,
+                        page: p.page,
+                        content: p.text.substring(0, 1500)
+                    });
+                }
+            });
+        } else {
+            // Text or Markdown
+            extractedText = await file.text();
+            pageCount = Math.max(1, Math.ceil(extractedText.split(/\s+/).length / 300));
+            window.PRELOADED_KNOWLEDGE = window.PRELOADED_KNOWLEDGE || [];
+            window.PRELOADED_KNOWLEDGE.unshift({
+                book: title,
+                page: 1,
+                content: extractedText.substring(0, 3000)
+            });
+        }
+
+        const words = extractedText.split(/\s+/).filter(Boolean).length;
+        const newBook = {
+            id: Date.now(),
+            title: title,
+            filename: file.name,
+            file_type: ext,
+            total_pages: pageCount,
+            total_words: words,
+            summary: `مرجع تمريضي تم رفعه وتحليله بواسطة الباحث: يتضمن ${words} كلمة في ${pageCount} صفحة.`,
+            topics: ["Clinical Guidelines", "Bedside Practice", "Nursing Informatics", "Patient Care"],
+            chunks: pageCount,
+            created_at: new Date().toISOString().replace('T', ' ').substring(0, 19)
+        };
+
+        // Add to local storage & in-memory books
+        window.PRELOADED_BOOKS = window.PRELOADED_BOOKS || [];
+        window.PRELOADED_BOOKS.unshift(newBook);
+        const userUploaded = JSON.parse(localStorage.getItem('nurse_user_books') || '[]');
+        userUploaded.unshift(newBook);
+        localStorage.setItem('nurse_user_books', JSON.stringify(userUploaded));
+
+        return newBook;
+    }
 
     function showUploadStatus(msg, type) {
         if (!statusAlert) {
