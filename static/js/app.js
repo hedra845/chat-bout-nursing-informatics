@@ -331,8 +331,10 @@ function initChat() {
         const bookId = document.getElementById('chat-book-selector').value;
         const mode = localStorage.getItem('nurse_ai_mode') || 'auto';
         const preferredLang = localStorage.getItem('nurse_ai_lang') || 'auto';
-        const apiKey = localStorage.getItem('nurse_gemini_key') || '';
+        const apiKey = localStorage.getItem('nurse_gemini_key') || window.SYSTEM_GEMINI_KEY || '';
 
+        // Check if we can reach backend, else fallback directly to Client-Side Gemini RAG
+        let data = null;
         try {
             const res = await fetch('/api/chat', {
                 method: 'POST',
@@ -345,26 +347,144 @@ function initChat() {
                     api_key: apiKey
                 })
             });
+            if (res.ok) {
+                data = await res.json();
+            }
+        } catch (serverErr) {
+            console.log('Backend server unreachable, switching to Direct Client-Side Gemini Engine...');
+        }
 
-            const data = await res.json();
-            removeLoading(loadingId);
+        // If backend was unreachable or returned an error, use client-side Gemini RAG directly!
+        if (!data || !data.success) {
+            data = await callClientSideGeminiRAG(msg, apiKey, preferredLang);
+        }
 
-            if (data.success) {
-                appendMessage('bot', data.response, data.sources, data.model_used);
-                loadDashboardStats();
-                if (data.researcher_profile && data.researcher_profile.style) {
-                    const toneBadge = document.getElementById('researcher-tone-badge');
-                    if (toneBadge) {
-                        toneBadge.innerHTML = `<i class="fa-solid fa-brain"></i> نمط الحوار: ${data.researcher_profile.style}`;
-                    }
+        removeLoading(loadingId);
+
+        if (data && data.success) {
+            appendMessage('bot', data.response, data.sources, data.model_used);
+            loadDashboardStats();
+            if (data.researcher_profile && data.researcher_profile.style) {
+                const toneBadge = document.getElementById('researcher-tone-badge');
+                if (toneBadge) {
+                    toneBadge.innerHTML = `<i class="fa-solid fa-brain"></i> نمط الحوار: ${data.researcher_profile.style}`;
+                }
+            }
+        } else {
+            appendMessage('bot', `عذراً، حدث خطأ: ${data?.error || 'فشلت معالجة الطلب'}`);
+        }
+    });
+}
+
+// Client-Side Gemini RAG Engine (Zero Server Dependency - Works 100% on Cloudflare Pages)
+async function callClientSideGeminiRAG(query, apiKey, preferredLang) {
+    if (!apiKey) {
+        apiKey = window.SYSTEM_GEMINI_KEY || localStorage.getItem('nurse_gemini_key') || '';
+    }
+
+    if (!apiKey) {
+        return {
+            success: false,
+            error: "يرجى إدخال مفتاح Gemini API Key في لوحة التحكم أو إعدادات الذكاء الاصطناعي."
+        };
+    }
+
+    const qLower = query.toLowerCase();
+    const isAr = preferredLang === 'ar' || (preferredLang !== 'en' && /[\u0600-\u06FF]/.test(query));
+    
+    // Search preloaded chunks for relevant context
+    let matchedSources = [];
+    if (window.PRELOADED_KNOWLEDGE && Array.isArray(window.PRELOADED_KNOWLEDGE)) {
+        const keywords = query.replace(/[^\w\u0600-\u06FF\s]/g, '').split(/\s+/).filter(w => w.length > 2);
+        const scored = window.PRELOADED_KNOWLEDGE.map(item => {
+            let score = 0;
+            const contentLower = item.content.toLowerCase();
+            for (const kw of keywords) {
+                if (contentLower.includes(kw.toLowerCase())) score += 1;
+            }
+            return { ...item, score };
+        }).filter(item => item.score > 0);
+
+        scored.sort((a, b) => b.score - a.score);
+        matchedSources = scored.slice(0, 4).map(s => ({
+            page_number: `${s.book} (ص ${s.page})`,
+            content: s.content
+        }));
+    }
+
+    // Build context string
+    let contextStr = "";
+    if (matchedSources.length > 0) {
+        contextStr = matchedSources.map((s, idx) => `\n[اقتباس ${idx+1} من ${s.page_number}]:\n${s.content}\n`).join("\n");
+    } else {
+        contextStr = "لم يتم العثور على اقتباس مباشر، اعتمد على المعرفة الشاملة بمعلوماتية التمريض (Nursing Informatics).";
+    }
+
+    const langInstruction = isAr ? "تحدث بلغة عربية أكاديمية سلسة وواضحة جداً." : "Respond in fluent, precise academic English.";
+    const systemPrompt = `أنت 'المساعد الذكي لمعلوماتية التمريض' (Advanced Nursing Informatics AI & Clinical Research Mentor).
+مهمتك الرئيسية هي التفاعل والدردشة المعمقة مع الباحث حول المحتوى المرفوع، والربط بينه وبين المعرفة الطبية الشاملة.
+تعليمات أساسية:
+1. اشرح وناقش ما فهمته من سؤال الباحث بعمق ومنطق سريري، ولا تكتفِ بنسخ ولصق النصوص.
+2. إذا كان السؤال متعلقاً بالمحتوى المرفوع، استشهد بالمعلومات الواردة ووضح مغزاها العملي عند سرير المريض (Bedside care) ونظم دعم القرار (CDSS).
+3. إذا كان السؤال عاماً أو خارج المحتوى، استخدم معلوماتك الطبية والتمريضية الشاملة للإجابة بدقة.
+4. صياغة الرد تكون منسقة وجميلة بعناوين واضحة:
+- 📌 ما استخلصه وفهمه المساعد من طرحك
+- 📖 الدليل والربط مع المراجع المعتمدة
+- 🔬 التحليل السريري والنقدي
+- 💡 أسئلة ومسارات مقترحة للنقاش
+${langInstruction}`;
+
+    const promptText = `${systemPrompt}
+
+المحتوى المرفوع والمراجع المتوفرة:
+${contextStr}
+
+سؤال / استفسار الباحث:
+${query}
+
+أجب بطريقة حوارية ذكية ومنسقة:`;
+
+    const models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
+    let lastError = "";
+
+    for (const model of models) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        try {
+            const resp = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: promptText }] }],
+                    generationConfig: { temperature: 0.5, maxOutputTokens: 2048 }
+                })
+            });
+
+            if (resp.ok) {
+                const data = await resp.json();
+                const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (text) {
+                    return {
+                        success: true,
+                        response: text,
+                        sources: matchedSources,
+                        model_used: `Google Gemini API (${model} - Direct)`,
+                        researcher_profile: { style: "تحليلي أكاديمي منطقي" }
+                    };
                 }
             } else {
-                appendMessage('bot', `عذراً، حدث خطأ: ${data.error || 'فشلت معالجة الطلب'}`);
+                const errData = await resp.json().catch(() => ({}));
+                lastError = errData?.error?.message || `HTTP ${resp.status}`;
             }
-        } catch (err) {
-            removeLoading(loadingId);
-            appendMessage('bot', `تعذر الاتصال بالسيرفر. يرجى التأكد من تشغيل التطبيق.`);
+        } catch (e) {
+            lastError = e.message;
         }
+    }
+
+    return {
+        success: false,
+        error: `تعذر الاتصال بـ Gemini API: ${lastError}`
+    };
+}
     });
 }
 
@@ -609,14 +729,24 @@ function initLibrary() {
 async function loadBooks() {
     try {
         const res = await fetch('/api/books');
-        const data = await res.json();
-        if (!data.success) return;
+        if (res.ok) {
+            const data = await res.json();
+            if (data.success && data.books && data.books.length) {
+                booksData = data.books;
+                renderBooksGrid(booksData);
+                populateBookSelectors(booksData);
+                return;
+            }
+        }
+    } catch (e) {
+        console.warn('Backend books API unreachable, loading preloaded books library...');
+    }
 
-        booksData = data.books;
+    // Fallback to preloaded books library
+    if (window.PRELOADED_BOOKS && window.PRELOADED_BOOKS.length) {
+        booksData = window.PRELOADED_BOOKS;
         renderBooksGrid(booksData);
         populateBookSelectors(booksData);
-    } catch (e) {
-        console.error('Error loading books:', e);
     }
 }
 
@@ -1096,12 +1226,28 @@ async function loadReferenceDataset(search = '', domain = '') {
         if (domain) url += `&domain=${encodeURIComponent(domain)}`;
 
         const res = await fetch(url);
-        const data = await res.json();
-        if (!data.success) return;
-
-        renderDatasetItems(data.dataset);
+        if (res.ok) {
+            const data = await res.json();
+            if (data.success && data.dataset) {
+                renderDatasetItems(data.dataset);
+                return;
+            }
+        }
     } catch (e) {
-        console.error('Error loading dataset:', e);
+        console.warn('Backend dataset API unreachable, loading preloaded dataset...');
+    }
+
+    // Fallback to preloaded dataset
+    if (window.PRELOADED_DATASET && window.PRELOADED_DATASET.length) {
+        let list = window.PRELOADED_DATASET;
+        if (domain) {
+            list = list.filter(d => d.domain === domain);
+        }
+        if (search) {
+            const s = search.toLowerCase();
+            list = list.filter(d => (d.name_ar + d.name_en + d.definition).toLowerCase().includes(s));
+        }
+        renderDatasetItems(list);
     }
 }
 
