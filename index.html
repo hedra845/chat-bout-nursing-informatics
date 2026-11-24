@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nursing Informatics AI & Knowledge Hub | المساعد الذكي لمعلوماتية التمريض</title>
+    <!-- FontAwesome & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js for Visual Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="./static/css/style.css?v=2.0">
+    <link rel="stylesheet" href="/static/css/style.css?v=2.0">
+<style>
+:root {
+    --primary: #0284c7;
+    --primary-hover: #0369a1;
+    --primary-light: #e0f2fe;
+    --primary-dark: #0c4a6e;
+    --secondary: #0d9488;
+    --secondary-hover: #0f766e;
+    --accent: #6366f1;
+    --bg-main: #f8fafc;
+    --bg-sidebar: #0f172a;
+    --sidebar-hover: #1e293b;
+    --sidebar-text: #94a3b8;
+    --sidebar-active: #38bdf8;
+    --card-bg: #ffffff;
+    --border-color: #e2e8f0;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --text-light: #94a3b8;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --success: #10b981;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+    --font-ar: 'Cairo', system-ui, -apple-system, sans-serif;
+    --font-en: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-ar), var(--font-en);
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    line-height: 1.6;
+    overflow-x: hidden;
+    height: 100vh;
+}
+
+/* App Layout Grid */
+.app-layout {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    width: 290px;
+    background-color: var(--bg-sidebar);
+    color: #f1f5f9;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 18px;
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.06);
+    z-index: 10;
+    flex-shrink: 0;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #1e293b;
+}
+
+.brand-icon {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+}
+
+.brand-info h2 {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: #fff;
+}
+
+.brand-info span {
+    font-size: 11px;
+    color: #38bdf8;
+    text-transform: uppercase;
+    font-weight: 600;
+    display: block;
+}
+
+.nav-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-grow: 1;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    color: var(--sidebar-text);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: 15px;
+    font-family: inherit;
+    font-weight: 600;
+    text-align: right;
+    transition: all 0.2s ease;
+}
+
+.nav-item i {
+    font-size: 18px;
+    width: 22px;
+}
+
+.nav-item:hover {
+    background-color: var(--sidebar-hover);
+    color: #f8fafc;
+}
+
+.nav-item.active {
+    background: linear-gradient(90deg, rgba(2, 132, 199, 0.25), rgba(2, 132, 199, 0.05));
+    color: var(--sidebar-active);
+    border-right: 4px solid var(--sidebar-active);
+}
+
+/* Sidebar Settings Section */
+.sidebar-settings {
+    background: #1e293b;
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin-top: 20px;
+    border: 1px solid #334155;
+}
+
+.settings-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #94a3b8;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-group {
+    margin-bottom: 12px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 12px;
+    color: #cbd5e1;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.form-control, .form-control-sm {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid #334155;
+    background-color: #0f172a;
+    color: #f8fafc;
+    font-family: inherit;
+    font-size: 13px;
+    transition: border 0.2s;
+}
+
+.form-control:focus, .form-control-sm:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.hint {
+    font-size: 10.5px;
+    color: #64748b;
+    margin-top: 4px;
+    display: block;
+}
+
+.quick-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 8px;
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.status-indicator.online {
+    background-color: var(--success);
+    box-shadow: 0 0 8px var(--success);
+}
+
+/* Main Content Styles */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    background-color: var(--bg-main);
+    position: relative;
+}
+
+/* Topbar Header */
+.topbar {
+    padding: 18px 30px;
+    background: #fff;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.topbar-title h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.topbar-title p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.header-badges {
+    display: flex;
+    gap: 12px;
+}
+
+.badge-pill {
+    background-color: var(--primary-light);
+    color: var(--primary-dark);
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Tab Panes */
+.tab-pane {
+    display: none;
+    padding: 24px 30px;
+    flex: 1;
+}
+
+.tab-pane.active {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Buttons */
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    box-shadow: 0 3px 8px rgba(2, 132, 199, 0.25);
+}
+
+.btn-primary:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: #f1f5f9;
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 9px 18px;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-secondary:hover {
+    background: #e2e8f0;
+}
+
+.btn-secondary-sm {
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.btn-secondary-sm:hover {
+    background: #e2e8f0;
+    color: var(--text-primary);
+}
+
+/* TAB 1: Chat Container */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 120px);
+    background: #fff;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.chat-header-bar {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border-color);
+    background-color: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.reference-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.chat-header-bar .form-control-sm {
+    background: #fff;
+    color: var(--text-primary);
+    border-color: var(--border-color);
+    width: auto;
+    min-width: 250px;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    background-color: #fafbfc;
+}
+
+.chat-msg {
+    display: flex;
+    gap: 14px;
+    max-width: 85%;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.chat-msg.bot {
+    align-self: flex-start;
+}
+
+.chat-msg.user {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+
+.msg-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    flex-shrink: 0;
+}
+
+.chat-msg.bot .msg-avatar {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #fff;
+}
+
+.chat-msg.user .msg-avatar {
+    background: #e2e8f0;
+    color: var(--text-primary);
+}
+
+.msg-content {
+    background: #fff;
+    padding: 14px 18px;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    position: relative;
+}
+
+.msg-actions-bar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed #e2e8f0;
+}
+
+.btn-translate-action {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: var(--primary-dark);
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.btn-translate-action:hover {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.translation-box {
+    margin-top: 10px;
+    padding: 12px 14px;
+    background: #f0fdf4;
+    border-right: 4px solid var(--success);
+    border-radius: var(--radius-sm);
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: #14532d;
+    animation: fadeIn 0.3s ease;
+}
+
+.translation-box-header {
+    font-size: 11px;
+    font-weight: 700;
+    color: #166534;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.chat-msg.user .msg-content {
+    background: linear-gradient(135deg, var(--primary), #0284c7);
+    color: #fff;
+    border: none;
+}
+
+.msg-author {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 6px;
+}
+
+.chat-msg.user .msg-author {
+    color: #e0f2fe;
+}
+
+.msg-body {
+    font-size: 15px;
+    line-height: 1.8;
+    color: #1e293b;
+    word-break: break-word;
+}
+
+/* Styled Content Blocks to prevent cramped text */
+.content-heading-3 {
+    margin: 16px 0 10px 0;
+    color: var(--primary);
+    font-size: 16px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 2px solid #e0f2fe;
+    padding-bottom: 6px;
+}
+
+.content-heading-2 {
+    margin: 18px 0 12px 0;
+    color: #0f172a;
+    font-size: 17px;
+    font-weight: 800;
+}
+
+.content-heading-1 {
+    margin: 20px 0 14px 0;
+    color: #0f172a;
+    font-size: 19px;
+    font-weight: 800;
+}
+
+.content-paragraph {
+    margin-bottom: 14px;
+    line-height: 1.85;
+}
+
+.content-paragraph:last-child {
+    margin-bottom: 0;
+}
+
+.highlight-term {
+    color: #0369a1;
+    font-weight: 700;
+    background: #f0f9ff;
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px solid #e0f2fe;
+}
+
+.chat-msg.user .highlight-term {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.content-quote {
+    margin: 12px 0 16px 0;
+    padding: 12px 18px;
+    background: #f8fafc;
+    border-right: 4px solid var(--secondary);
+    border-radius: var(--radius-sm);
+    color: #334155;
+    font-size: 14.5px;
+    line-height: 1.75;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+html[dir="ltr"] .content-quote {
+    border-right: none;
+    border-left: 4px solid var(--secondary);
+}
+
+/* Structured List Items with Comfortable Breathing Room */
+.content-list-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin: 10px 0;
+    padding: 8px 12px;
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    line-height: 1.75;
+}
+
+.content-list-item.numbered .list-num {
+    background: var(--primary);
+    color: #fff;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.content-list-item.bullet .bullet-dot {
+    color: var(--secondary);
+    font-size: 12px;
+    margin-top: 4px;
+    flex-shrink: 0;
+}
+
+.content-list-item .list-text {
+    flex: 1;
+    color: #1e293b;
+}
+
+.chat-msg.user .content-list-item {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+.chat-msg.user .content-list-item .list-text {
+    color: #fff;
+}
+
+.source-citation-box {
+    margin-top: 16px;
+    padding: 14px 18px;
+    background: #f8fafc;
+    border-radius: var(--radius-md);
+    border: 1px solid #e2e8f0;
+    border-right: 4px solid var(--secondary);
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+    border-right: 3px solid var(--secondary);
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.source-title {
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.suggested-chips {
+    padding: 10px 24px;
+    background: #fff;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow-x: auto;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.chip {
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 5px 12px;
+    border-radius: 16px;
+    font-size: 12.5px;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+}
+
+.chip:hover {
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    border-color: #bae6fd;
+}
+
+.chat-input-wrapper {
+    padding: 16px 24px;
+    background: #fff;
+    border-top: 1px solid var(--border-color);
+}
+
+.chat-input-form {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+}
+
+.chat-input-form textarea {
+    flex: 1;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    font-family: inherit;
+    font-size: 14.5px;
+    resize: none;
+    max-height: 120px;
+    outline: none;
+    background: #f8fafc;
+    transition: all 0.2s;
+}
+
+.chat-input-form textarea:focus {
+    background: #fff;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+}
+
+.chat-input-form button {
+    height: 46px;
+    width: 48px;
+    border-radius: var(--radius-md);
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+/* TAB 2: Library & Books */
+.library-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.card {
+    background: #fff;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    padding: 24px;
+}
+
+.card-header h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.card-header p {
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    margin-bottom: 16px;
+}
+
+.upload-dropzone {
+    border: 2px dashed #cbd5e1;
+    border-radius: var(--radius-md);
+    padding: 36px 20px;
+    text-align: center;
+    background: #f8fafc;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.upload-dropzone:hover, .upload-dropzone.dragover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+}
+
+.dropzone-icon {
+    font-size: 40px;
+    color: var(--primary);
+    margin-bottom: 10px;
+}
+
+.dropzone-text {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.dropzone-text span {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+.dropzone-hint {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+    display: block;
+}
+
+.file-preview {
+    margin-top: 12px;
+    padding: 10px 16px;
+    background: #f1f5f9;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+}
+
+.form-row {
+    display: flex;
+    gap: 16px;
+}
+
+.flex-1 {
+    flex: 1;
+}
+
+.progress-bar-container {
+    margin-top: 16px;
+    background: #e2e8f0;
+    border-radius: 20px;
+    height: 22px;
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    animation: progressAnim 1.8s infinite linear;
+}
+
+@keyframes progressAnim {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+}
+
+.progress-text {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    top: 2px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+
+/* Books Grid */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.section-header h3 {
+    font-size: 18px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.badge {
+    background: #e2e8f0;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.books-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 18px;
+}
+
+.book-card {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.2s;
+}
+
+.book-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: #cbd5e1;
+}
+
+.book-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.book-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.book-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.book-summary {
+    font-size: 13px;
+    color: #475569;
+    line-height: 1.5;
+    margin-bottom: 14px;
+}
+
+.book-topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.topic-tag {
+    background: #f1f5f9;
+    color: var(--primary-dark);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+
+.book-card-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid #f1f5f9;
+}
+
+/* TAB 3: Notes */
+.notes-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.notes-toolbar {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    background: #fff;
+    padding: 16px 20px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.search-box {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+}
+
+.search-box i {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-light);
+}
+
+.search-box input {
+    padding-right: 36px;
+    background: #f8fafc;
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+.category-filters {
+    display: flex;
+    gap: 8px;
+}
+
+.filter-btn {
+    background: #f1f5f9;
+    border: none;
+    padding: 7px 14px;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+
+.filter-btn.active {
+    background: var(--primary);
+    color: #fff;
+}
+
+.notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 18px;
+}
+
+.note-card {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: all 0.2s;
+}
+
+.note-card.pinned {
+    border-top: 4px solid var(--warning);
+}
+
+.note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.note-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.pin-icon {
+    color: var(--warning);
+    cursor: pointer;
+}
+
+.note-category-badge {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--secondary);
+    background: #ccfbf1;
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 10px;
+}
+
+.note-body {
+    font-size: 13.5px;
+    color: #334155;
+    line-height: 1.6;
+    margin-bottom: 14px;
+    white-space: pre-wrap;
+    flex-grow: 1;
+}
+
+.note-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11.5px;
+    color: var(--text-light);
+    border-top: 1px solid #f8fafc;
+    padding-top: 10px;
+}
+
+/* TAB 4: Analytics */
+.analytics-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.stats-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+}
+
+.stat-card {
+    background: #fff;
+    padding: 20px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.stat-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.stat-icon.purple { background: #f3e8ff; color: #9333ea; }
+.stat-icon.teal { background: #ccfbf1; color: #0d9488; }
+.stat-icon.blue { background: #e0f2fe; color: #0284c7; }
+.stat-icon.amber { background: #fef3c7; color: #d97706; }
+
+.stat-num {
+    display: block;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.1;
+}
+
+.stat-title {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.analytics-layout-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 1024px) {
+    .analytics-layout-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Repeated Questions Table Modern Styling */
+.table-responsive {
+    overflow-x: auto;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.custom-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13.5px;
+    text-align: right;
+}
+
+.custom-table th {
+    background: #f8fafc;
+    padding: 14px 18px;
+    color: #475569;
+    font-weight: 700;
+    border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
+    letter-spacing: -0.2px;
+}
+
+.custom-table th:first-child {
+    border-top-right-radius: var(--radius-md);
+}
+.custom-table th:last-child {
+    border-top-left-radius: var(--radius-md);
+}
+
+.custom-table td {
+    padding: 16px 18px;
+    border-bottom: 1px solid #f1f5f9;
+    color: var(--text-primary);
+    vertical-align: middle;
+}
+
+.custom-table tr:last-child td {
+    border-bottom: none;
+}
+
+.custom-table tr {
+    transition: background-color 0.15s ease;
+}
+
+.custom-table tr:hover {
+    background-color: #f8fafc;
+}
+
+/* Question cell styling with bilingual auto-alignment */
+.table-question-cell {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    line-height: 1.6;
+    max-width: 480px;
+    unicode-bidi: plaintext;
+    text-align: start;
+}
+
+.table-question-cell.en-text {
+    direction: ltr;
+    text-align: left;
+    font-family: var(--font-en);
+}
+
+.table-question-cell.ar-text {
+    direction: rtl;
+    text-align: right;
+    font-family: var(--font-ar);
+}
+
+/* Category Badge Pill */
+.table-cat-badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 700;
+    background: #f0fdf4;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.table-cat-badge.terminologies {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+}
+
+.table-cat-badge.systems {
+    background: #f5f3ff;
+    color: #6d28d9;
+    border-color: #ddd6fe;
+}
+
+.table-cat-badge.core {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: #a7f3d0;
+}
+
+.table-cat-badge.general {
+    background: #f8fafc;
+    color: #475569;
+    border-color: #e2e8f0;
+}
+
+/* Modern Frequency Pill */
+.freq-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 800;
+    background: #fff1f2;
+    color: #be123c;
+    border: 1px solid #fecdd3;
+    box-shadow: 0 1px 3px rgba(225, 29, 72, 0.08);
+    white-space: nowrap;
+}
+
+.freq-pill i {
+    font-size: 11px;
+    color: #e11d48;
+}
+
+/* Date cell styling */
+.table-date-cell {
+    font-size: 12px;
+    color: #64748b;
+    white-space: nowrap;
+    direction: ltr;
+    text-align: right;
+    font-family: var(--font-en);
+}
+
+.chart-box {
+    position: relative;
+    height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.modal-card {
+    background: #fff;
+    width: 90%;
+    max-width: 580px;
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 12px;
+}
+
+.modal-header h3 {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+</style>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-notes-medical"></i>
+                </div>
+                <div class="brand-info">
+                    <h2>NurseInfo AI</h2>
+                    <span>Nursing Informatics Hub</span>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <button class="nav-item active" data-tab="chat">
+                    <i class="fa-solid fa-comments"></i>
+                    <span data-i18n="chatNav">المحادثة السريرية (Chat)</span>
+                </button>
+                <button class="nav-item" data-tab="dataset">
+                    <i class="fa-solid fa-database"></i>
+                    <span>قاعدة بيانات المرجع (Reference Dataset)</span>
+                </button>
+                <button class="nav-item" data-tab="researcher">
+                    <i class="fa-solid fa-brain"></i>
+                    <span>ذاكرة الباحث وأفكاره (Researcher Memory)</span>
+                </button>
+                <button class="nav-item" data-tab="library">
+                    <i class="fa-solid fa-book-medical"></i>
+                    <span data-i18n="libraryNav">مكتبة وتحليل الكتب (Books)</span>
+                </button>
+                <button class="nav-item" data-tab="notes">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                    <span data-i18n="notesNav">الملاحظات والدراسة (Notes)</span>
+                </button>
+                <button class="nav-item" data-tab="analytics">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span data-i18n="analyticsNav">الأسئلة المتكررة والإحصائيات</span>
+                </button>
+            </nav>
+
+            <!-- Mode & API Settings in Sidebar -->
+            <div class="sidebar-settings">
+                <div class="settings-title">
+                    <i class="fa-solid fa-sliders"></i> <span data-i18n="aiSettings">إعدادات الذكاء الاصطناعي</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="ai-lang-select"><i class="fa-solid fa-globe"></i> <span data-i18n="langLabel">لغة الإجابة المفضلة:</span></label>
+                    <select id="ai-lang-select" class="form-control">
+                        <option value="auto">تلقائي (حسب لغة السؤال) / Auto</option>
+                        <option value="ar">العربية دائمًا (Arabic)</option>
+                        <option value="en">English Always (الإنجليزية)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="ai-mode-select" data-i18n="engineType">نوع المحرك (Engine):</label>
+                    <select id="ai-mode-select" class="form-control">
+                        <option value="auto">تلقائي (Built-in + Gemini)</option>
+                        <option value="local">محرك محلي مستقل (Standalone)</option>
+                        <option value="gemini">Google Gemini API (سحابي)</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="gemini-key-group">
+                    <label for="gemini-api-key">Gemini API Key (اختياري):</label>
+                    <input type="password" id="gemini-api-key" class="form-control" placeholder="أدخل مفتاح Gemini..." />
+                    <small class="hint">يتم حفظ المفتاح محلياً في متصفحك فقط</small>
+                </div>
+
+                <div class="quick-status">
+                    <div class="status-indicator online"></div>
+                    <span id="active-engine-label">المحرك جاهز</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Top Bar -->
+            <header class="topbar">
+                <div class="topbar-title">
+                    <h1 id="tab-title">المحادثة الذكية التمريضية</h1>
+                    <p id="tab-subtitle">مساعد سريري وأكاديمي لتحليل وفهم مفاهيم معلوماتية التمريض ومراجعها</p>
+                </div>
+                <div class="header-badges">
+                    <button id="toggle-ui-lang-btn" class="badge-pill btn-lang-toggle" style="cursor: pointer; border: 1px solid var(--border-color);">
+                        <i class="fa-solid fa-language"></i> <span id="ui-lang-btn-text">English UI</span>
+                    </button>
+                    <div class="badge-pill">
+                        <i class="fa-solid fa-book"></i> <span id="stat-books-count">0</span> <span data-i18n="booksIndexed">كتب مفهرسة</span>
+                    </div>
+                    <div class="badge-pill">
+                        <i class="fa-solid fa-question-circle"></i> <span id="stat-queries-count">0</span> <span data-i18n="queriesLogged">استفسار مسجل</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- TAB 1: CHAT INTERFACE -->
+            <section id="tab-chat" class="tab-pane active">
+                <div class="chat-container">
+                    <div class="chat-header-bar">
+                        <div class="reference-selector">
+                            <label><i class="fa-solid fa-filter"></i> مصدر الإجابة / المرجع:</label>
+                            <select id="chat-book-selector" class="form-control-sm">
+                                <option value="">كل الكتب والمراجع المخزنة (شامل)</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <span id="researcher-tone-badge" class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 11px;">
+                                <i class="fa-solid fa-brain"></i> نمط الحوار: تحليلي أكاديمي
+                            </span>
+                            <button id="clear-chat-btn" class="btn-secondary-sm" title="مسح المحادثة الحالية">
+                                <i class="fa-solid fa-trash-can"></i> محادثة جديدة
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Messages Stream -->
+                    <div class="chat-messages" id="chat-messages-box">
+                        <!-- Welcome message -->
+                        <div class="chat-msg bot">
+                            <div class="msg-avatar"><i class="fa-solid fa-user-nurse"></i></div>
+                            <div class="msg-content">
+                                <div class="msg-author">المساعد الذكي لمعلوماتية التمريض (NurseInfo AI)</div>
+                                <div class="msg-body">
+                                    أهلاً بك! أنا مساعدك التفاعلي المتخصص في <strong>معلوماتية التمريض (Nursing Informatics)</strong>.
+                                    <br>يمكنك:
+                                    <ul>
+                                        <li>سؤالي حول مفاهيم مثل: <em>DIKW Pyramid, NANDA/NIC/NOC, CDSS, EHR, NMDS, HIPAA</em>.</li>
+                                        <li>رفع كتبك ومراجعك من تبويب <strong>"مكتبة وتحليل الكتب"</strong> لتحليلها فورياً والبحث داخلها.</li>
+                                        <li>متابعة الأسئلة الأكثر تكراراً واستخراج الملاحظات السريرية التلقائية.</li>
+                                    </ul>
+                                    <em>ما هو الموضوع أو السؤال الذي تود مناقشته اليوم؟</em>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Suggested Prompts / Chips -->
+                    <div class="suggested-chips">
+                        <span>أسئلة سريعة:</span>
+                        <button class="chip" data-prompt="What is the DIKW hierarchy in Nursing Informatics?">ما هو هرم DIKW في التمريض؟</button>
+                        <button class="chip" data-prompt="Explain the difference between NANDA, NIC, and NOC">الفرق بين NANDA و NIC و NOC</button>
+                        <button class="chip" data-prompt="How does CDSS reduce medication errors and what is alert fatigue?">نظم دعم القرار الطبي و Alert Fatigue</button>
+                        <button class="chip" data-prompt="ما هي عناصر Nursing Minimum Data Set (NMDS)؟">عناصر الـ NMDS التمريضية</button>
+                    </div>
+
+                    <!-- Chat Input Bar -->
+                    <div class="chat-input-wrapper">
+                        <form id="chat-form" class="chat-input-form">
+                            <textarea id="chat-input" placeholder="اكتب سؤالك أو استفسارك التمريضي هنا (عربي أو إنجليزي)..." rows="1"></textarea>
+                            <button type="submit" id="chat-send-btn" class="btn-primary">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB DATASET: REFERENCE KNOWLEDGE BASE -->
+            <section id="tab-dataset" class="tab-pane">
+                <div class="library-container">
+                    <div class="card" style="border-right: 5px solid var(--secondary);">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-database"></i> قاعدة بيانات المرجع القياسي (Nursing Informatics Benchmark Dataset)</h3>
+                            <p>مجموعة بيانات معيارية موثقة ومعتمدة دولياً (ANA / IMIA / HIMSS / ISO) تخدم كمرجع أساسي ومصدر إثبات موحد يستند إليه الذكاء الاصطناعي في إجاباته السريرية ومقارناته.</p>
+                        </div>
+                        <div class="notes-toolbar" style="margin-top: 14px; padding: 12px 16px;">
+                            <div class="search-box">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="dataset-search-input" placeholder="بحث في مفاهيم ومعايير الـ Dataset..." class="form-control">
+                            </div>
+                            <div class="category-filters" id="dataset-domain-filters">
+                                <button class="filter-btn active" data-domain="">كل المجالات</button>
+                                <button class="filter-btn" data-domain="Core Concepts">المفاهيم الأساسية</button>
+                                <button class="filter-btn" data-domain="Terminologies">المصطلحات (Terminologies)</button>
+                                <button class="filter-btn" data-domain="Clinical Decision Support">دعم القرار (CDSS)</button>
+                                <button class="filter-btn" data-domain="EHR & Systems">السجلات والأنظمة</button>
+                                <button class="filter-btn" data-domain="Ethics & HIPAA">الأخلاقيات والخصوصية</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="books-section">
+                        <div class="section-header">
+                            <h3><i class="fa-solid fa-table-list"></i> سجل بنود الـ Dataset المرجعية</h3>
+                            <span class="badge" id="dataset-total-badge">10 بنود معتمدة</span>
+                        </div>
+                        <div class="notes-grid" id="dataset-items-container">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB RESEARCHER: MEMORY & COGNITIVE PROFILE -->
+            <section id="tab-researcher" class="tab-pane">
+                <div class="library-container">
+                    <div class="card" style="border-right: 5px solid var(--accent);">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-brain"></i> الملف الإدراكي وذاكرة الباحث (Researcher Cognitive Memory)</h3>
+                            <p>يتعلم النظام تلقائياً من طريقة حوارك وأسلوبك المنطقي، ويسجل فرضياتك وأفكارك البحثية لمواصلة البناء عليها في كل نقاش.</p>
+                        </div>
+                        <div class="form-row" style="margin-top: 10px;">
+                            <div class="stat-card flex-1">
+                                <div class="stat-icon purple"><i class="fa-solid fa-user-graduate"></i></div>
+                                <div class="stat-details">
+                                    <span class="stat-num" id="profile-tone-text" style="font-size: 16px;">تحليلي أكاديمي</span>
+                                    <span class="stat-title">الأسلوب ونبرة الحوار المكتشفة</span>
+                                </div>
+                            </div>
+                            <div class="stat-card flex-1">
+                                <div class="stat-icon teal"><i class="fa-solid fa-lightbulb"></i></div>
+                                <div class="stat-details">
+                                    <span class="stat-num" id="profile-ideas-count" style="font-size: 20px;">0</span>
+                                    <span class="stat-title">الأفكار والفرضيات المسجلة</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 18px;">
+                            <h4 style="font-size: 14px; margin-bottom: 8px;"><i class="fa-solid fa-tags"></i> مجالات واهتمامات الباحث التي رصدها الذكاء الاصطناعي:</h4>
+                            <div id="profile-interests-tags" class="book-topics">
+                                <span class="topic-tag">معلوماتية التمريض</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="books-section">
+                        <div class="section-header">
+                            <h3><i class="fa-solid fa-feather-pointed"></i> سجل فرضيات وأفكار الباحث المحفوظة</h3>
+                            <span class="badge" id="ideas-total-badge">0 أفكار مسجلة</span>
+                        </div>
+                        <div class="notes-grid" id="researcher-ideas-container">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: BOOKS & LIBRARY -->
+            <section id="tab-library" class="tab-pane">
+                <div class="library-container">
+                    <!-- Upload Card -->
+                    <div class="card upload-card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-cloud-arrow-up"></i> رفع كتاب أو مرجع تمريضي جديد</h3>
+                            <p>قم برفع ملفات الكتب (PDF, TXT, MD) ليتم تقسيمها، فهرستها، واستخراج الملاحظات تلقائياً في قاعدة البيانات.</p>
+                        </div>
+                        <form id="upload-form" class="upload-form">
+                            <div class="upload-dropzone" id="dropzone">
+                                <i class="fa-solid fa-file-pdf dropzone-icon"></i>
+                                <p class="dropzone-text">اسحب وأفلت ملف الكتاب هنا، أو <span>اضغط للاختيار</span></p>
+                                <span class="dropzone-hint">يدعم ملفات PDF, TXT بحد أقصى 50MB</span>
+                                <input type="file" id="book-file-input" accept=".pdf,.txt,.md" style="display: none;" required>
+                            </div>
+                            <div id="file-info-preview" class="file-preview" style="display: none;">
+                                <i class="fa-solid fa-file-lines" style="font-size: 20px; color: var(--primary);"></i>
+                                <span id="preview-file-name" style="font-weight: 700;">filename.pdf</span>
+                                <span id="preview-file-size" class="text-muted">(2.4 MB)</span>
+                                <button type="button" id="remove-file-btn" style="margin-right: auto; background: none; border: none; color: #ef4444; cursor: pointer; font-size: 13px;">
+                                    <i class="fa-solid fa-xmark"></i> إلغاء
+                                </button>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group flex-1">
+                                    <label>عنوان الكتاب أو المرجع (اختياري):</label>
+                                    <input type="text" id="book-custom-title" class="form-control" placeholder="مثال: Nursing Informatics and the Foundation of Knowledge">
+                                </div>
+                                <button type="submit" id="upload-btn" class="btn-primary" style="margin-top: 24px; min-width: 220px;">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i> حفظ وفهرسة الكتاب
+                                </button>
+                            </div>
+                            <div id="upload-status-alert" style="display: none; margin-top: 14px; padding: 12px 16px; border-radius: 8px; font-size: 13.5px; font-weight: 600;"></div>
+                            <div id="upload-progress" class="progress-bar-container" style="display: none;">
+                                <div class="progress-bar-fill" id="progress-fill"></div>
+                                <span class="progress-text" id="progress-label">جاري حفظ الكتاب وتحليل الفصول في قاعدة البيانات...</span>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Books Grid -->
+                    <div class="books-section">
+                        <div class="section-header">
+                            <h3><i class="fa-solid fa-layer-group"></i> الكتب والمراجع المفهرسة في قاعدة البيانات</h3>
+                            <span id="books-total-badge" class="badge">1 كتاب</span>
+                        </div>
+                        <div class="books-grid" id="books-list-container">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: NOTES & STUDY SUMMARIES -->
+            <section id="tab-notes" class="tab-pane">
+                <div class="notes-container">
+                    <div class="notes-toolbar">
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="notes-search-input" placeholder="بحث في الملاحظات والملخصات..." class="form-control">
+                        </div>
+                        <div class="category-filters" id="notes-category-filters">
+                            <button class="filter-btn active" data-cat="">الكل</button>
+                            <button class="filter-btn" data-cat="Concept Summary">ملخصات المفاهيم</button>
+                            <button class="filter-btn" data-cat="Terminology">المصطلحات (Terminologies)</button>
+                            <button class="filter-btn" data-cat="Clinical Workflow">سير العمل السريري</button>
+                        </div>
+                        <button class="btn-primary" id="open-new-note-modal">
+                            <i class="fa-solid fa-plus"></i> إضافة ملاحظة جديدة
+                        </button>
+                    </div>
+
+                    <div class="notes-grid" id="notes-list-container">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: FREQUENT QUESTIONS & ANALYTICS -->
+            <section id="tab-analytics" class="tab-pane">
+                <div class="analytics-container">
+                    <!-- Top stats cards -->
+                    <div class="stats-overview-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon purple"><i class="fa-solid fa-book-bookmark"></i></div>
+                            <div class="stat-details">
+                                <span class="stat-num" id="stat-total-books">0</span>
+                                <span class="stat-title">الكتب المسجلة</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon teal"><i class="fa-solid fa-file-lines"></i></div>
+                            <div class="stat-details">
+                                <span class="stat-num" id="stat-total-pages">0</span>
+                                <span class="stat-title">الصفحات المحللة</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon blue"><i class="fa-solid fa-messages"></i></div>
+                            <div class="stat-details">
+                                <span class="stat-num" id="stat-total-messages">0</span>
+                                <span class="stat-title">المحادثات السريرية</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon amber"><i class="fa-solid fa-fire"></i></div>
+                            <div class="stat-details">
+                                <span class="stat-num" id="stat-total-repeated">0</span>
+                                <span class="stat-title">أنماط الأسئلة المكررة</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts & Tables Layout -->
+                    <div class="analytics-layout-grid">
+                        <!-- Repeated Questions Table Card -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-fire-flame-curved"></i> سجل الأسئلة الأكثر تكراراً (Repeated Queries)</h3>
+                                <p>يسجل النظام تلقائياً تشابه الأسئلة ويحسب تكرار كل مفهوم تمريضي للمساعدة في المراجعة المركزة.</p>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="custom-table" id="repeated-questions-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 48%;"><i class="fa-solid fa-circle-question"></i> السؤال / المفهوم المطروح</th>
+                                            <th style="text-align: center; width: 22%;"><i class="fa-solid fa-folder-tree"></i> التصنيف التمريضي</th>
+                                            <th style="text-align: center; width: 14%;"><i class="fa-solid fa-arrow-trend-up"></i> مرات التكرار</th>
+                                            <th style="text-align: right; width: 16%;"><i class="fa-regular fa-clock"></i> آخر استفسار</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="repeated-table-body">
+                                        <!-- Populated via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Chart Card -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-chart-pie"></i> توزيع موضوعات الملاحظات والكتب</h3>
+                                <p>توزيع المحتوى المفهرس حسب مجالات Nursing Informatics</p>
+                            </div>
+                            <div class="chart-box">
+                                <canvas id="categoriesChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal: Add New Note -->
+    <div class="modal-overlay" id="note-modal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-pen-to-square"></i> إضافة ملاحظة سريرية جديدة</h3>
+                <button class="modal-close" id="close-note-modal">&times;</button>
+            </div>
+            <form id="new-note-form">
+                <div class="form-group">
+                    <label>عنوان الملاحظة:</label>
+                    <input type="text" id="note-title" class="form-control" required placeholder="مثال: أهمية الربط بين SNOMED CT و ICNP">
+                </div>
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label>التصنيف:</label>
+                        <select id="note-category" class="form-control">
+                            <option value="Concept Summary">ملخص مفهوم (Concept Summary)</option>
+                            <option value="Terminology">المصطلحات والمعايير (Terminology)</option>
+                            <option value="Clinical Workflow">سير العمل السريري (Clinical Workflow)</option>
+                            <option value="Ethics & HIPAA">الأخلاقيات والخصوصية (Ethics & HIPAA)</option>
+                        </select>
+                    </div>
+                    <div class="form-group flex-1">
+                        <label>الوسوم (مفصولة بفواصل):</label>
+                        <input type="text" id="note-tags" class="form-control" placeholder="EHR, Safety, CDSS">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>المحتوى التمريضي:</label>
+                    <textarea id="note-content" class="form-control" rows="5" required placeholder="سجل النقاط والملاحظات السريرية الهامة هنا..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" id="cancel-note-modal">إلغاء</button>
+                    <button type="submit" class="btn-primary">حفظ الملاحظة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main JavaScript App -->
+    <script src="./static/js/app.js?v=2.0"></script>
+    <script src="/static/js/app.js?v=2.0"></script>
+</body>
+</html>
