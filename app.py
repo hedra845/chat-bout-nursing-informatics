@@ -18,8 +18,12 @@ from researcher_memory import analyze_and_update_researcher_profile, get_researc
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
+# Initialize DB on module import (important for Gunicorn workers)
+init_db()
+
 if HAS_WHITENOISE:
-    app.wsgi_app = WhiteNoise(app.wsgi_app, root='static/', prefix='static/')
+    static_dir = os.path.join(os.path.dirname(__file__), 'static')
+    app.wsgi_app = WhiteNoise(app.wsgi_app, root=static_dir, prefix='static/')
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MB max
 ALLOWED_EXTENSIONS = {'pdf', 'txt', 'md'}
