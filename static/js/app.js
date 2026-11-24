@@ -128,14 +128,14 @@ function translateFullTextLocally(text) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    initNavigation();
-    initSettings();
-    initChat();
-    initLibrary();
-    initNotes();
-    initAnalytics();
-    initDatasetFilters();
-    applyUiLanguage(currentUiLang);
+    try { initNavigation(); } catch (e) { console.error('Navigation init failed:', e); }
+    try { initSettings(); } catch (e) { console.error('Settings init failed:', e); }
+    try { initChat(); } catch (e) { console.error('Chat init failed:', e); }
+    try { initLibrary(); } catch (e) { console.error('Library init failed:', e); }
+    try { initNotes(); } catch (e) { console.error('Notes init failed:', e); }
+    try { initAnalytics(); } catch (e) { console.error('Analytics init failed:', e); }
+    try { initDatasetFilters(); } catch (e) { console.error('Dataset filters init failed:', e); }
+    try { applyUiLanguage(currentUiLang); } catch (e) { console.error('Language apply failed:', e); }
 
     loadDashboardStats();
     loadBooks();

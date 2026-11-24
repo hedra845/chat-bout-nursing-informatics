@@ -4,6 +4,12 @@ import uuid
 from flask import Flask, request, jsonify, render_template, send_from_directory
 from werkzeug.utils import secure_filename
 
+try:
+    from whitenoise import WhiteNoise
+    HAS_WHITENOISE = True
+except ImportError:
+    HAS_WHITENOISE = False
+
 from database import get_db_connection, init_db
 from book_analyzer import analyze_and_index_book
 from ai_engine import search_relevant_chunks, record_or_update_question, generate_local_response, call_gemini_api
@@ -11,6 +17,9 @@ from translator import translate_to_arabic
 from researcher_memory import analyze_and_update_researcher_profile, get_researcher_context
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
+
+if HAS_WHITENOISE:
+    app.wsgi_app = WhiteNoise(app.wsgi_app, root='static/', prefix='static/')
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MB max
 ALLOWED_EXTENSIONS = {'pdf', 'txt', 'md'}

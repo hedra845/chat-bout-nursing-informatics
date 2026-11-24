@@ -1,0 +1,6 @@
+flask
+whitenoise
+gunicorn
+google-generativeai
+pypdf2
+python-dotenv
