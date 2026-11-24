@@ -4,6 +4,8 @@ let currentUiLang = localStorage.getItem('nurse_ui_lang') || 'ar';
 let booksData = [];
 let categoriesChart = null;
 
+console.log('NurseInfo AI: App.js loaded, initializing...');
+
 // Translations dictionary for UI
 const i18n = {
     ar: {
@@ -144,14 +146,24 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initNavigation() {
+    console.log('initNavigation called');
     const navItems = document.querySelectorAll('.nav-item');
     const tabPanes = document.querySelectorAll('.tab-pane');
     const tabTitle = document.getElementById('tab-title');
     const tabSubtitle = document.getElementById('tab-subtitle');
 
-    navItems.forEach(item => {
+    console.log('Found navItems:', navItems.length, 'tabPanes:', tabPanes.length);
+
+    if (!navItems.length || !tabPanes.length) {
+        console.warn('Navigation elements not found:', { navItems: navItems.length, tabPanes: tabPanes.length });
+        return;
+    }
+
+    navItems.forEach((item, idx) => {
         item.addEventListener('click', () => {
+            console.log('Nav item clicked:', idx, item.getAttribute('data-tab'));
             const tab = item.getAttribute('data-tab');
+            if (!tab) return;
             currentTab = tab;
 
             navItems.forEach(n => n.classList.remove('active'));
@@ -162,8 +174,8 @@ function initNavigation() {
             if (targetPane) targetPane.classList.add('active');
 
             const dict = i18n[currentUiLang] || i18n.ar;
-            tabTitle.textContent = dict[`${tab}Title`];
-            tabSubtitle.textContent = dict[`${tab}Subtitle`];
+            if (tabTitle) tabTitle.textContent = dict[`${tab}Title`] || '';
+            if (tabSubtitle) tabSubtitle.textContent = dict[`${tab}Subtitle`] || '';
 
             if (tab === 'analytics') {
                 loadDashboardStats();
